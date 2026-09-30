@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Tứ giác - Đồ thị, Bài toán, Quiz & Đổi Quà (Neo4j)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hệ thống Tứ giác - Học tập, Quiz & Đổi quà</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -12,26 +12,73 @@
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             background-color: #f8fafc;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            margin: 0;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
+        /* Top Navbar */
+        .app-navbar {
+            background: #1e293b;
+            padding: 8px 12px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            z-index: 1000;
+        }
+
+        .user-tag {
+            background: #334155;
+            border-radius: 20px;
+            padding: 4px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .action-btns .btn {
+            padding: 5px 9px;
+            font-size: 0.82rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 6px;
+        }
+
+        /* Layout Workspace */
         .main-wrapper {
             flex: 1;
             display: flex;
             flex-direction: row;
             overflow: hidden;
+            position: relative;
         }
 
         #network-panel {
             flex: 6;
             height: 100%;
             background: #ffffff;
-            border-right: 1px solid #dee2e6;
+            border-right: 1px solid #e2e8f0;
             position: relative;
         }
 
@@ -44,63 +91,65 @@
             flex: 4;
             height: 100%;
             overflow-y: auto;
-            background: #fdfdfd;
-            padding: 20px;
+            background: #ffffff;
+            padding: 16px;
+            -webkit-overflow-scrolling: touch;
         }
 
+        /* Responsive Mobile (< 768px) */
         @media (max-width: 768px) {
             .main-wrapper {
                 flex-direction: column;
             }
             #network-panel {
                 flex: none;
-                height: 45vh;
+                height: 48vh;
                 border-right: none;
-                border-bottom: 2px solid #cbd5e1;
+                border-bottom: 2px solid #e2e8f0;
             }
             #info-panel {
-                flex: none;
-                height: 55vh;
-                padding: 14px;
+                flex: 1;
+                height: auto;
+                padding: 12px;
+            }
+            .app-navbar {
+                padding: 6px 8px;
+            }
+            .user-tag {
+                padding: 3px 6px;
+                font-size: 0.78rem;
+                max-width: 135px;
+            }
+            .user-tag span.name-text {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 65px;
+            }
+            .action-btns .btn {
+                padding: 4px 7px;
+                font-size: 0.8rem;
+            }
+            .btn-text {
+                display: none !important;
             }
         }
 
         .property-title {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
-            color: #6c757d;
+            color: #64748b;
         }
 
         .code-box {
             background-color: #f1f5f9;
-            padding: 4px 8px;
+            padding: 3px 8px;
             border-radius: 4px;
             font-weight: 600;
             color: #d63384;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: inline-block;
-        }
-
-        .quiz-opt-btn {
-            text-align: left;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-        }
-        .quiz-opt-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .gift-card, .exercise-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            transition: all 0.2s ease;
-        }
-        .gift-card:hover, .exercise-card:hover {
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            transform: translateY(-2px);
         }
 
         .tip-card {
@@ -109,47 +158,44 @@
             border-left: 4px solid #f59e0b;
             border-radius: 8px;
         }
+
+        .quiz-opt-btn {
+            text-align: left;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Header Navbar -->
-    <nav class="navbar navbar-dark bg-dark px-3 py-2 shadow-sm flex-nowrap">
-        <span class="navbar-brand mb-0 h1 fs-6 text-truncate">
-            <i class="bi bi-diagram-3-fill text-info me-1"></i> Tứ Giác & Học Tập
-        </span>
+    <!-- Header Navbar hoàn toàn Responsive -->
+    <header class="app-navbar shadow-sm">
+        <!-- Người chơi -->
+        <div class="user-tag" onclick="changePlayerName()" title="Bấm để đổi tên">
+            <i class="bi bi-person-circle text-info"></i>
+            <span class="name-text fw-semibold" id="playerDisplay">Khách</span>
+            <span class="badge bg-warning text-dark px-1"><i class="bi bi-star-fill"></i> <span id="scoreDisplay">0</span></span>
+            <span class="badge bg-light text-dark px-1"><i class="bi bi-coin text-warning"></i> <span id="coinsDisplay">0</span></span>
+        </div>
 
-        <!-- Nhóm nút tính năng & Thông tin người chơi -->
-        <div class="ms-auto d-flex align-items-center gap-2">
-            <!-- Thẻ Người chơi -->
-            <div class="badge bg-secondary p-2 d-flex align-items-center gap-2" style="cursor: pointer;" onclick="changePlayerName()">
-                <i class="bi bi-person-circle fs-6"></i>
-                <span id="playerDisplay">Khách</span>
-                <span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> <span id="scoreDisplay">0</span></span>
-                <span class="badge bg-light text-dark"><i class="bi bi-coin text-warning"></i> <span id="coinsDisplay">0</span></span>
-            </div>
-
-            <!-- Nút Bài toán -->
-            <button class="btn btn-outline-info btn-sm fw-bold" onclick="openExerciseModal()">
-                <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Bài toán</span>
+        <!-- Các nút chức năng (Mobile chỉ hiện icon, Desktop hiện chữ) -->
+        <div class="action-btns">
+            <button class="btn btn-outline-info" onclick="openExerciseModal()" title="Bài toán luyện tập">
+                <i class="bi bi-pencil-square"></i> <span class="btn-text">Bài toán</span>
             </button>
-
-            <!-- Bảng xếp hạng -->
-            <button class="btn btn-outline-warning btn-sm fw-bold" onclick="openLeaderboard()">
-                <i class="bi bi-trophy-fill"></i> <span class="d-none d-md-inline">BXH</span>
+            <button class="btn btn-outline-warning" onclick="openLeaderboard()" title="Bảng xếp hạng">
+                <i class="bi bi-trophy-fill"></i> <span class="btn-text">BXH</span>
             </button>
-
-            <!-- Cửa hàng Đổi Quà -->
-            <button class="btn btn-outline-success btn-sm fw-bold" onclick="openGiftShop()">
-                <i class="bi bi-gift-fill"></i> <span class="d-none d-md-inline">Đổi Quà</span>
+            <button class="btn btn-outline-success" onclick="openGiftShop()" title="Đổi quà bằng xu">
+                <i class="bi bi-gift-fill"></i> <span class="btn-text">Đổi Quà</span>
             </button>
-
-            <!-- Quiz Game -->
-            <button class="btn btn-warning btn-sm fw-bold text-dark" onclick="startQuiz()">
-                <i class="bi bi-controller"></i> Quiz
+            <button class="btn btn-warning fw-bold text-dark" onclick="startQuiz()" title="Bắt đầu Quiz thử thách">
+                <i class="bi bi-controller"></i> <span class="btn-text">Quiz</span>
             </button>
         </div>
-    </nav>
+    </header>
 
     <!-- Main Workspace -->
     <div class="main-wrapper">
@@ -159,27 +205,26 @@
 
         <div id="info-panel">
             <div id="details-content">
-                <div class="text-center text-muted my-4 py-3">
-                    <i class="bi bi-hand-index-thumb fs-1 d-block mb-2 text-secondary"></i>
-                    <h6 class="fw-bold">Chạm vào một hình trên sơ đồ</h6>
-                    <p class="small text-secondary px-2">Bấm vào bất kỳ hình nào để xem chi tiết tính chất, công thức, <strong>mẹo giải nhanh</strong>, làm bài toán liên quan hoặc chơi Quiz nhận xu đổi quà!</p>
+                <div class="text-center text-muted my-3 py-2">
+                    <i class="bi bi-hand-index-thumb fs-2 d-block mb-1 text-secondary"></i>
+                    <h6 class="fw-bold mb-1">Chạm vào một hình trên sơ đồ</h6>
+                    <p class="small text-secondary px-2 mb-0">Xem tính chất, công thức, mẹo ghi nhớ và làm bài tập thực hành.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Bài Toán Hình Học -->
-    <div class="modal fade" id="exerciseModal" tabindex="-1" aria-labelledby="exerciseModalLabel" aria-hidden="true">
+    <!-- Modal Bài Toán -->
+    <div class="modal fade" id="exerciseModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content shadow border-0">
-                <div class="modal-header bg-info text-dark">
-                    <h5 class="modal-title fw-bold" id="exerciseModalLabel">
-                        <i class="bi bi-book-half me-1"></i> Bài Toán Luyện Tập Theo Từng Hình
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-info text-dark py-2">
+                    <h6 class="modal-title fw-bold">
+                        <i class="bi bi-book-half me-1"></i> Bài Toán Luyện Tập
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-3">
-                    <!-- Bộ lọc theo loại hình -->
                     <div class="d-flex flex-wrap gap-1 mb-3" id="exerciseFilterBar">
                         <button class="btn btn-sm btn-dark filter-btn active" onclick="filterExercises('all', this)">Tất cả</button>
                         <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="filterExercises('tu_giac', this)">Tứ giác</button>
@@ -190,52 +235,48 @@
                         <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="filterExercises('hinh_vuong', this)">Hình vuông</button>
                         <button class="btn btn-sm btn-outline-secondary filter-btn" onclick="filterExercises('hinh_dieu', this)">Hình diều</button>
                     </div>
-
-                    <!-- Danh sách bài toán -->
                     <div id="exerciseListContainer">
-                        <div class="text-center py-4 text-muted">
-                            <div class="spinner-border spinner-border-sm text-info" role="status"></div> Đang tải bài toán...
-                        </div>
+                        <div class="text-center py-3 text-muted">Đang tải bài toán...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Quiz Game -->
+    <!-- Modal Quiz -->
     <div class="modal fade" id="quizModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow border-0">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title fw-bold">
-                        <i class="bi bi-patch-question-fill me-1"></i> Quiz Thử Thách (+20đ, +10 Xu / câu)
-                    </h5>
+                <div class="modal-header bg-warning text-dark py-2">
+                    <h6 class="modal-title fw-bold">
+                        <i class="bi bi-patch-question-fill me-1"></i> Quiz (+20đ, +10 Xu)
+                    </h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4" id="quizBody"></div>
+                <div class="modal-body p-3" id="quizBody"></div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Bảng Xếp Hạng -->
+    <!-- Modal BXH -->
     <div class="modal fade" id="leaderboardModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow border-0">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold">
-                        <i class="bi bi-trophy-fill text-warning me-2"></i> Bảng Xếp Hạng Cao Thủ
-                    </h5>
+                <div class="modal-header bg-dark text-white py-2">
+                    <h6 class="modal-title fw-bold">
+                        <i class="bi bi-trophy-fill text-warning me-2"></i> Bảng Xếp Hạng
+                    </h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-3">
+                <div class="modal-body p-2">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+                        <table class="table table-sm table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th scope="col" style="width: 15%;">Hạng</th>
-                                    <th scope="col">Người chơi</th>
-                                    <th scope="col" class="text-end">Điểm (Score)</th>
-                                    <th scope="col" class="text-end">Xu</th>
+                                    <th style="width: 15%;">Hạng</th>
+                                    <th>Người chơi</th>
+                                    <th class="text-end">Điểm</th>
+                                    <th class="text-end">Xu</th>
                                 </tr>
                             </thead>
                             <tbody id="leaderboardTableBody"></tbody>
@@ -246,22 +287,22 @@
         </div>
     </div>
 
-    <!-- Modal Cửa Hàng Đổi Quà -->
+    <!-- Modal Cửa Hàng -->
     <div class="modal fade" id="giftModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content shadow border-0">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title fw-bold">
-                        <i class="bi bi-shop me-2"></i> Cửa Hàng Đổi Quà Bằng Xu
-                    </h5>
-                    <div class="ms-auto me-3 badge bg-light text-dark fs-6">
-                        Ví của bạn: <span id="shopCoinsDisplay" class="text-danger fw-bold">0</span> <i class="bi bi-coin text-warning"></i>
+                <div class="modal-header bg-success text-white py-2">
+                    <h6 class="modal-title fw-bold">
+                        <i class="bi bi-shop me-2"></i> Đổi Quà Tặng
+                    </h6>
+                    <div class="ms-auto me-2 badge bg-light text-dark">
+                        Ví: <span id="shopCoinsDisplay" class="text-danger fw-bold">0</span> <i class="bi bi-coin text-warning"></i>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body p-3">
                     <div id="giftNotification"></div>
-                    <div class="row g-3" id="giftListContainer"></div>
+                    <div class="row g-2" id="giftListContainer"></div>
                 </div>
             </div>
         </div>
@@ -274,20 +315,21 @@
         let network = null;
         let globalNodes = [];
         let globalEdges = [];
+        let globalExercises = [];
 
-        // MẸO GHI NHỚ VÀ GIẢI TOÁN
+        // Fallback mẹo ghi nhớ
         const shapeTips = {
-            "hinh_hoc_phang": "Mọi bài toán tứ giác đều diễn ra trong không gian 2 chiều (mặt phẳng). Hãy luôn phân tích các yếu tố: đỉnh, cạnh đối, góc vuông và đường chéo.",
-            "tu_giac": "<strong>Mẹo tính góc:</strong> Tổng 4 góc của mọi tứ giác luôn bằng <strong>360°</strong>. Khi đề bài cho 3 góc, chỉ cần lấy 360° trừ đi tổng 3 góc đã biết là tìm được góc thứ tư.",
-            "hinh_thang": "<strong>Bài thơ thuộc lòng tính diện tích:</strong><br><em>\"Muốn tính diện tích hình thang<br>Đáy lớn đáy nhỏ ta mang cộng vào<br>Cộng vào nhân với chiều cao<br>Chia đôi lấy nửa thế nào cũng ra!\"</em>",
-            "hinh_binh_hanh": "<strong>Quy tắc nhận biết:</strong> Cặp cạnh đối vừa song song vừa bằng nhau. Khi tính diện tích, nhớ lấy chiều cao vuông góc nhân với đáy tương ứng (chớ nhầm với cạnh bên).",
-            "hinh_chu_nhat": "<strong>Mẹo tính nhanh:</strong><br>• Hình bình hành có 1 góc vuông ➔ Tự động trở thành hình chữ nhật.<br>• Tính độ dài đường chéo: Dùng định lý Pythagore <code>d = √(a² + b²)</code>.",
-            "hinh_thoi": "<strong>Mẹo đường chéo:</strong> Hai đường chéo luôn vuông góc tại trung điểm. Diện tích bằng một nửa tích độ dài hai đường chéo: <code>S = (d₁ × d₂) / 2</code>.",
-            "hinh_vuong": "<strong>Vua của các hình tứ giác:</strong> Vừa mang đầy đủ tính chất của hình chữ nhật (4 góc vuông, 2 đường chéo bằng nhau), vừa mang đầy đủ tính chất của hình thoi (4 cạnh bằng nhau, 2 đường chéo vuông góc).",
-            "hinh_dieu": "<strong>Mẹo nhớ hình cánh diều:</strong> Có 2 cặp cạnh kề bằng nhau, hai đường chéo cắt nhau vuông góc giống như hình thoi nên công thức diện tích cũng là: <code>S = (d₁ × d₂) / 2</code>."
+            "hinh_hoc_phang": "Không gian 2 chiều là nền tảng của hình học. Hãy luôn quan sát đỉnh, cạnh đối, góc vuông và đường chéo.",
+            "tu_giac": "<strong>Mẹo góc:</strong> Tổng 4 góc luôn bằng <strong>360°</strong>. Lấy 360° trừ tổng 3 góc đã biết để tìm góc còn lại.",
+            "hinh_thang": "<strong>Bài thơ diện tích:</strong><br><em>\"Muốn tính diện tích hình thang<br>Đáy lớn đáy nhỏ ta mang cộng vào<br>Cộng vào nhân với chiều cao<br>Chia đôi lấy nửa thế nào cũng ra!\"</em>",
+            "hinh_binh_hanh": "<strong>Nhận biết nhanh:</strong> Các cặp cạnh đối song song và bằng nhau. Diện tích <code>S = a × h</code> (đáy nhân chiều cao).",
+            "hinh_chu_nhat": "<strong>Mẹo nhanh:</strong> Hình bình hành có 1 góc vuông là hình chữ nhật. Đường chéo tính bằng Pythagore: <code>d = √(a² + b²)</code>.",
+            "hinh_thoi": "<strong>Mẹo đường chéo:</strong> 2 đường chéo vuông góc tại trung điểm. Diện tích bằng nửa tích hai đường chéo: <code>S = (d₁ × d₂) / 2</code>.",
+            "hinh_vuong": "<strong>Vua hình học:</strong> Vừa là hình chữ nhật đặc biệt (4 cạnh bằng nhau), vừa là hình thoi đặc biệt (4 góc vuông).",
+            "hinh_dieu": "Có 2 cặp cạnh kề nhau bằng nhau, hai đường chéo vuông góc. Diện tích <code>S = (d₁ × d₂) / 2</code> giống hình thoi."
         };
 
-        // Trạng thái người chơi
+        // Người chơi
         let currentPlayer = localStorage.getItem("neo4j_player") || "NguoiChoi_" + Math.floor(Math.random() * 1000);
         let currentScore = 0;
         let currentCoins = 0;
@@ -298,9 +340,153 @@
         const leaderboardModal = new bootstrap.Modal(document.getElementById('leaderboardModal'));
         const giftModal = new bootstrap.Modal(document.getElementById('giftModal'));
 
-        // ==================== BÀI TOÁN HÌNH HỌC ====================
-        let globalExercises = [];
+        // ==================== TẢI & VẼ ĐỒ THỊ (VIS-NETWORK) ====================
+        async function fetchGraphData() {
+            try {
+                const response = await fetch('/api/graph');
+                const data = await response.json();
+                globalNodes = data.nodes;
+                globalEdges = data.edges;
+                renderNetwork(globalNodes, globalEdges);
+            } catch (err) {
+                console.error("Lỗi graph:", err);
+            }
+        }
 
+        function renderNetwork(nodes, edges) {
+            const container = document.getElementById('network');
+            const isMobile = window.innerWidth <= 768;
+
+            const formattedNodes = nodes.map(n => {
+                let color = "#38bdf8"; 
+                if (n.id === "hinh_hoc_phang") color = "#94a3b8";
+                if (n.id === "hinh_vuong") color = "#f472b6";
+                if (n.id === "hinh_chu_nhat" || n.id === "hinh_thoi") color = "#4ade80";
+                if (n.id === "hinh_dieu") color = "#fb923c";
+
+                return {
+                    id: n.id,
+                    label: n.name || n.id,
+                    color: { background: color, border: "#0f172a", highlight: { background: '#f59e0b', border: '#b45309' } },
+                    font: { size: isMobile ? 14 : 13, color: "#0f172a", bold: true },
+                    shape: "box",
+                    margin: isMobile ? 8 : 8,
+                    shadow: true
+                };
+            });
+
+            const formattedEdges = edges.map(e => ({
+                from: e.from,
+                to: e.to,
+                label: e.label,
+                arrows: { to: { enabled: true, scaleFactor: 0.7 } },
+                font: { size: isMobile ? 9 : 10, background: '#ffffff', strokeWidth: 0 },
+                color: { color: '#64748b', highlight: '#f59e0b' },
+                smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.3 }
+            }));
+
+            const options = {
+                layout: {
+                    hierarchical: {
+                        direction: "UD",
+                        sortMethod: "directed",
+                        levelSeparation: isMobile ? 85 : 110,
+                        nodeSpacing: isMobile ? 120 : 160
+                    }
+                },
+                physics: false,
+                interaction: {
+                    hover: true,
+                    zoomView: true,
+                    dragView: true,
+                    multiselect: false
+                }
+            };
+
+            network = new vis.Network(container, {
+                nodes: new vis.DataSet(formattedNodes),
+                edges: new vis.DataSet(formattedEdges)
+            }, options);
+
+            network.once('afterDrawing', () => {
+                network.fit({
+                    animation: { duration: 600, easingFunction: 'easeInOutQuad' }
+                });
+            });
+
+            network.on("click", (params) => {
+                if (params.nodes.length > 0) {
+                    const selectedNode = globalNodes.find(n => n.id === params.nodes[0]);
+                    if (selectedNode) showDetails(selectedNode);
+                }
+            });
+        }
+
+        // ==================== CHI TIẾT & MẸO ====================
+        function showDetails(node) {
+            const parentRels = globalEdges.filter(e => e.to === node.id);
+            const childRels = globalEdges.filter(e => e.from === node.id);
+
+            let parentHtml = parentRels.length > 0
+                ? parentRels.map(r => {
+                    const pNode = globalNodes.find(n => n.id === r.from);
+                    return `<div class="list-group-item py-1 px-2"><span class="fw-bold text-primary">${pNode ? pNode.name : r.from}</span> <div class="small text-muted fst-italic">(${r.label})</div></div>`;
+                }).join('') : '<div class="text-muted small ps-2">Là hình gốc.</div>';
+
+            let childHtml = childRels.length > 0
+                ? childRels.map(r => {
+                    const cNode = globalNodes.find(n => n.id === r.to);
+                    return `<div class="list-group-item py-1 px-2"><span class="fw-bold text-success">${cNode ? cNode.name : r.to}</span> <div class="small text-muted fst-italic">(${r.label})</div></div>`;
+                }).join('') : '<div class="text-muted small ps-2">Hình cuối chuỗi.</div>';
+
+            const tipContent = node.meo || shapeTips[node.id] || "Quan sát kỹ các đường chéo và các góc đối để nhận dạng hình chuẩn xác nhất.";
+
+            document.getElementById("details-content").innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                    <span class="badge bg-primary px-2 py-1">${node.labels ? node.labels.join(', ') : 'Tứ Giác'}</span>
+                    <button class="btn btn-sm btn-outline-info py-0 px-2" onclick="openExerciseModal('${node.id}')">
+                        <i class="bi bi-pencil-square me-1"></i> Bài toán hình này
+                    </button>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">${node.name}</h5>
+
+                <!-- Khung Mẹo ghi nhớ -->
+                <div class="tip-card p-2 mb-2 shadow-sm">
+                    <div class="d-flex align-items-center mb-1 text-warning-emphasis fw-bold" style="font-size:0.75rem;">
+                        <i class="bi bi-lightbulb-fill text-warning me-1"></i> MẸO GHI NHỚ & GIẢI NHANH
+                    </div>
+                    <div class="text-dark small" style="line-height: 1.5; font-size: 0.86rem;">
+                        ${tipContent}
+                    </div>
+                </div>
+
+                <!-- Thẻ Thông số chi tiết -->
+                <div class="card shadow-sm border-0 mb-2">
+                    <div class="card-body p-2">
+                        <div class="mb-1"><span class="property-title d-block">1. Tên gọi</span><div class="small">${node.name}</div></div>
+                        <hr class="my-1 text-light">
+                        <div class="mb-1"><span class="property-title d-block">2. Tính chất</span><div class="small text-secondary">${node.tinh_chat || 'N/A'}</div></div>
+                        <hr class="my-1 text-light">
+                        <div class="mb-1"><span class="property-title d-block">3. Nhận biết</span><div class="small text-secondary">${node.nhan_biet || 'N/A'}</div></div>
+                        <hr class="my-1 text-light">
+                        <div class="mb-1"><span class="property-title d-block">4. Chu vi (P)</span><span class="code-box">${node.chu_vi || 'N/A'}</span></div>
+                        <hr class="my-1 text-light">
+                        <div><span class="property-title d-block">5. Diện tích (S)</span><span class="code-box">${node.dien_tich || 'N/A'}</span></div>
+                    </div>
+                </div>
+
+                <!-- Thẻ Quan hệ -->
+                <div class="card shadow-sm border-0 border-start border-3 border-info mb-2">
+                    <div class="card-header bg-white fw-bold py-1 px-2 small"><i class="bi bi-diagram-2 me-1 text-info"></i> Quan Hệ Kế Thừa</div>
+                    <div class="card-body p-2">
+                        <div class="mb-2"><span class="property-title d-block mb-1">Được suy ra từ:</span><div class="list-group border rounded-2">${parentHtml}</div></div>
+                        <div><span class="property-title d-block mb-1">Tiến hóa thành:</span><div class="list-group border rounded-2">${childHtml}</div></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== BÀI TOÁN ====================
         async function openExerciseModal(preselectedShapeId = null) {
             exerciseModal.show();
             if (globalExercises.length === 0) {
@@ -308,8 +494,7 @@
                     const res = await fetch('/api/exercises');
                     globalExercises = await res.json();
                 } catch (err) {
-                    document.getElementById('exerciseListContainer').innerHTML = 
-                        `<div class="alert alert-danger">Không tải được bài tập: ${err}</div>`;
+                    document.getElementById('exerciseListContainer').innerHTML = `<div class="alert alert-danger p-2 small">Lỗi tải bài tập.</div>`;
                     return;
                 }
             }
@@ -342,33 +527,31 @@
         function renderExerciseList(exercises) {
             const container = document.getElementById('exerciseListContainer');
             if (!exercises || exercises.length === 0) {
-                container.innerHTML = `<div class="text-center text-muted py-4">Chưa có bài toán nào cho mục này.</div>`;
+                container.innerHTML = `<div class="text-center text-muted py-3 small">Chưa có bài toán nào.</div>`;
                 return;
             }
 
             container.innerHTML = exercises.map(ex => `
-                <div class="card exercise-card mb-3 p-3 bg-white">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge bg-info text-dark">${ex.shape_name}</span>
-                        <small class="text-muted">Gợi ý: <code>${ex.formula_hint}</code></small>
+                <div class="card mb-2 p-2 bg-white shadow-sm border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="badge bg-info text-dark" style="font-size:0.75rem;">${ex.shape_name}</span>
+                        <small class="text-muted" style="font-size:0.75rem;">Gợi ý: <code>${ex.formula_hint}</code></small>
                     </div>
-                    <h6 class="fw-bold text-dark mb-2">${ex.title}</h6>
-                    <p class="text-secondary small mb-3">${ex.content}</p>
+                    <h6 class="fw-bold text-dark mb-1" style="font-size:0.9rem;">${ex.title}</h6>
+                    <p class="text-secondary small mb-2" style="font-size:0.83rem;">${ex.content}</p>
 
-                    <div class="row g-2 align-items-center">
-                        <div class="col-auto">
+                    <div class="row g-1 align-items-center">
+                        <div class="col-7 col-sm-auto">
                             <div class="input-group input-group-sm">
-                                <input type="number" step="any" class="form-control" id="input-ex-${ex.id}" placeholder="Nhập đáp số">
+                                <input type="number" step="any" class="form-control" id="input-ex-${ex.id}" placeholder="Đáp số">
                                 <span class="input-group-text bg-light">${ex.unit}</span>
                             </div>
                         </div>
-                        <div class="col-auto">
-                            <button class="btn btn-sm btn-primary" onclick="checkExerciseAnswer(${ex.id})">
-                                <i class="bi bi-check2"></i> Kiểm tra
-                            </button>
+                        <div class="col-5 col-sm-auto">
+                            <button class="btn btn-sm btn-primary w-100" onclick="checkExerciseAnswer(${ex.id})">Kiểm tra</button>
                         </div>
-                        <div class="col-auto">
-                            <button class="btn btn-sm btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#sol-${ex.id}">
+                        <div class="col-12 col-sm-auto mt-1 mt-sm-0">
+                            <button class="btn btn-sm btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#sol-${ex.id}">
                                 Xem giải chi tiết
                             </button>
                         </div>
@@ -378,8 +561,8 @@
 
                     <div class="collapse mt-2" id="sol-${ex.id}">
                         <div class="card card-body bg-light p-2 small text-dark border-0">
-                            <strong><i class="bi bi-lightbulb-fill text-warning me-1"></i> Hướng dẫn giải:</strong>
-                            <pre class="mb-0 mt-1" style="font-family: inherit; white-space: pre-wrap;">${ex.solution}</pre>
+                            <strong><i class="bi bi-lightbulb-fill text-warning me-1"></i> Hướng dẫn:</strong>
+                            <pre class="mb-0 mt-1" style="font-family: inherit; white-space: pre-wrap; font-size: 0.82rem;">${ex.solution}</pre>
                         </div>
                     </div>
                 </div>
@@ -392,20 +575,20 @@
             const fb = document.getElementById(`feedback-ex-${exId}`);
 
             if (isNaN(inputVal)) {
-                fb.innerHTML = `<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i> Vui lòng nhập đáp số bằng số</span>`;
+                fb.innerHTML = `<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i> Vui lòng nhập số</span>`;
                 fb.style.display = 'block';
                 return;
             }
 
             if (Math.abs(inputVal - ex.correct_answer) < 0.05) {
-                fb.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Chính xác! Đáp số là ${ex.correct_answer} ${ex.unit}</span>`;
+                fb.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Đúng! Đáp số: ${ex.correct_answer} ${ex.unit}</span>`;
             } else {
-                fb.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i> Chưa đúng! Hãy kiểm tra lại hoặc bấm "Xem giải chi tiết"</span>`;
+                fb.innerHTML = `<span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i> Chưa đúng! Thử lại nhé</span>`;
             }
             fb.style.display = 'block';
         }
 
-        // ==================== QUẢN LÝ NGƯỜI CHƠI ====================
+        // ==================== ĐỒNG BỘ NGƯỜI CHƠI ====================
         async function syncPlayerData(username) {
             try {
                 const res = await fetch('/api/player/get_or_create', {
@@ -433,77 +616,71 @@
 
         function changePlayerName() {
             const newName = prompt("Nhập tên / Nickname của bạn:", currentPlayer);
-            if (newName && newName.trim() !== "") {
-                syncPlayerData(newName.trim());
-            }
+            if (newName && newName.trim() !== "") syncPlayerData(newName.trim());
         }
 
         // ==================== BẢNG XẾP HẠNG ====================
         async function openLeaderboard() {
             leaderboardModal.show();
             const tbody = document.getElementById("leaderboardTableBody");
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-3 text-muted">Đang tải bảng xếp hạng...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-2 text-muted small">Đang tải...</td></tr>`;
 
             try {
                 const res = await fetch('/api/leaderboard');
                 const leaders = await res.json();
-                
                 tbody.innerHTML = leaders.map((item, index) => {
                     let rankBadge = `<span class="badge bg-secondary">${index + 1}</span>`;
-                    if (index === 0) rankBadge = `<i class="bi bi-trophy-fill text-warning fs-5"></i>`;
-                    if (index === 1) rankBadge = `<i class="bi bi-trophy-fill text-secondary fs-5"></i>`;
-                    if (index === 2) rankBadge = `<i class="bi bi-trophy-fill text-danger fs-5"></i>`;
-
+                    if (index === 0) rankBadge = `<i class="bi bi-trophy-fill text-warning"></i>`;
+                    if (index === 1) rankBadge = `<i class="bi bi-trophy-fill text-secondary"></i>`;
+                    if (index === 2) rankBadge = `<i class="bi bi-trophy-fill text-danger"></i>`;
                     const isCurrent = item.username === currentPlayer ? 'table-warning fw-bold' : '';
 
                     return `
                         <tr class="${isCurrent}">
                             <td>${rankBadge}</td>
-                            <td>${item.username} ${item.username === currentPlayer ? '(Bạn)' : ''}</td>
-                            <td class="text-end text-primary fw-bold">${item.score} đ</td>
-                            <td class="text-end text-warning fw-bold">${item.coins} <i class="bi bi-coin"></i></td>
+                            <td>${item.username}</td>
+                            <td class="text-end text-primary fw-bold">${item.score}</td>
+                            <td class="text-end text-warning fw-bold">${item.coins}</td>
                         </tr>
                     `;
                 }).join('');
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-danger text-center">Lỗi tải dữ liệu.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="text-danger text-center small">Lỗi tải dữ liệu.</td></tr>`;
             }
         }
 
-        // ==================== CỬA HÀNG ĐỔI QUÀ ====================
+        // ==================== CỬA HÀNG ====================
         async function openGiftShop() {
             document.getElementById('giftNotification').innerHTML = '';
             document.getElementById('shopCoinsDisplay').innerText = currentCoins;
             giftModal.show();
 
             const container = document.getElementById("giftListContainer");
-            container.innerHTML = `<div class="text-center py-4 text-muted w-100">Đang tải danh mục quà...</div>`;
+            container.innerHTML = `<div class="text-center py-3 text-muted w-100 small">Đang tải quà...</div>`;
 
             try {
                 const res = await fetch('/api/gifts');
                 const gifts = await res.json();
 
                 container.innerHTML = gifts.map(g => `
-                    <div class="col-md-6">
-                        <div class="card gift-card p-3 h-100">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="bg-light p-2 rounded-circle me-3 text-success fs-3">
+                    <div class="col-12 col-sm-6">
+                        <div class="card p-2 h-100 border">
+                            <div class="d-flex align-items-center mb-1">
+                                <div class="bg-light p-2 rounded-circle me-2 text-success fs-5">
                                     <i class="bi ${g.icon}"></i>
                                 </div>
                                 <div>
-                                    <h6 class="fw-bold mb-0">${g.name}</h6>
-                                    <span class="badge bg-warning text-dark"><i class="bi bi-coin"></i> ${g.coins_cost} Xu</span>
+                                    <h6 class="fw-bold mb-0" style="font-size:0.88rem;">${g.name}</h6>
+                                    <span class="badge bg-warning text-dark" style="font-size:0.75rem;"><i class="bi bi-coin"></i> ${g.coins_cost} Xu</span>
                                 </div>
                             </div>
-                            <p class="small text-muted mb-3">${g.desc}</p>
-                            <button class="btn btn-sm btn-success mt-auto w-100" onclick="redeemGift('${g.id}')">
-                                <i class="bi bi-cart-check me-1"></i> Đổi Quà Ngay
-                            </button>
+                            <p class="small text-muted mb-2" style="font-size:0.8rem;">${g.desc}</p>
+                            <button class="btn btn-sm btn-success mt-auto w-100" onclick="redeemGift('${g.id}')">Đổi Quà</button>
                         </div>
                     </div>
                 `).join('');
             } catch (err) {
-                container.innerHTML = `<div class="alert alert-danger w-100">Không tải được danh mục quà tặng.</div>`;
+                container.innerHTML = `<div class="alert alert-danger w-100 small">Lỗi tải danh mục quà.</div>`;
             }
         }
 
@@ -520,16 +697,16 @@
                 if (res.ok) {
                     currentCoins = data.remaining_coins;
                     updatePlayerUI();
-                    noti.innerHTML = `<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-1"></i> ${data.message}</div>`;
+                    noti.innerHTML = `<div class="alert alert-success p-2 small mb-2">${data.message}</div>`;
                 } else {
-                    noti.innerHTML = `<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-1"></i> ${data.error}</div>`;
+                    noti.innerHTML = `<div class="alert alert-danger p-2 small mb-2">${data.error}</div>`;
                 }
             } catch (err) {
-                noti.innerHTML = `<div class="alert alert-danger">Lỗi kết nối khi đổi quà.</div>`;
+                noti.innerHTML = `<div class="alert alert-danger p-2 small">Lỗi kết nối.</div>`;
             }
         }
 
-        // ==================== QUIZ GAME ====================
+        // ==================== QUIZ ====================
         let quizQuestions = [];
         let currentQuestionIndex = 0;
         let earnedScoreInGame = 0;
@@ -537,12 +714,7 @@
 
         async function startQuiz() {
             const body = document.getElementById("quizBody");
-            body.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner-border text-warning" role="status"></div>
-                    <p class="mt-3 text-muted">Đang sinh câu hỏi từ Neo4j...</p>
-                </div>
-            `;
+            body.innerHTML = `<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-warning"></div><p class="mt-2 text-muted small">Đang nạp câu hỏi...</p></div>`;
             quizModal.show();
 
             try {
@@ -553,7 +725,7 @@
                 earnedCoinsInGame = 0;
                 renderQuizQuestion();
             } catch (err) {
-                body.innerHTML = `<div class="alert alert-danger">Lỗi tải quiz.</div>`;
+                body.innerHTML = `<div class="alert alert-danger small">Lỗi tải quiz.</div>`;
             }
         }
 
@@ -568,21 +740,21 @@
 
             let optionsHtml = q.options.map((opt, i) => `
                 <button class="btn btn-outline-primary quiz-opt-btn w-100 mb-2" onclick="submitAnswer(this, '${encodeURIComponent(opt)}', '${encodeURIComponent(q.answer)}', '${encodeURIComponent(q.explain)}')">
-                    <span class="badge bg-secondary me-2">${String.fromCharCode(65 + i)}</span> ${opt}
+                    <span class="badge bg-secondary me-1">${String.fromCharCode(65 + i)}</span> ${opt}
                 </button>
             `).join('');
 
             body.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="badge bg-dark">Câu ${currentQuestionIndex + 1} / ${quizQuestions.length}</span>
                     <div>
-                        <span class="badge bg-primary me-1">+${earnedScoreInGame} Điểm</span>
-                        <span class="badge bg-warning text-dark">+${earnedCoinsInGame} Xu</span>
+                        <span class="badge bg-primary me-1">+${earnedScoreInGame} đ</span>
+                        <span class="badge bg-warning text-dark">+${earnedCoinsInGame} xu</span>
                     </div>
                 </div>
-                <h6 class="fw-bold mb-3 text-dark">${q.question}</h6>
+                <h6 class="fw-bold mb-3 text-dark" style="font-size:0.95rem;">${q.question}</h6>
                 <div id="optionsContainer">${optionsHtml}</div>
-                <div id="explainContainer" class="mt-3" style="display:none;"></div>
+                <div id="explainContainer" class="mt-2" style="display:none;"></div>
             `;
         }
 
@@ -600,20 +772,20 @@
                 earnedScoreInGame += 20;
                 earnedCoinsInGame += 10;
                 explainBox.innerHTML = `
-                    <div class="alert alert-success py-2">
-                        <i class="bi bi-check-circle-fill me-1"></i> <strong>Chính xác!</strong> (+20đ, +10 xu)<br>${explain}
+                    <div class="alert alert-success py-2 px-3 small">
+                        <strong>Chính xác!</strong> (+20đ, +10 xu)<br>${explain}
                     </div>
-                    <button class="btn btn-primary w-100 mt-2" onclick="nextQuestion()">Tiếp tục <i class="bi bi-arrow-right"></i></button>
+                    <button class="btn btn-sm btn-primary w-100 mt-1" onclick="nextQuestion()">Tiếp tục <i class="bi bi-arrow-right"></i></button>
                 `;
             } else {
                 btn.classList.remove("btn-outline-primary");
                 btn.classList.add("btn-danger");
                 explainBox.innerHTML = `
-                    <div class="alert alert-danger py-2">
-                        <i class="bi bi-x-circle-fill me-1"></i> <strong>Chưa đúng!</strong> Đáp án là: <u>${correct}</u>.<br>
+                    <div class="alert alert-danger py-2 px-3 small">
+                        <strong>Chưa đúng!</strong> Đáp án: <u>${correct}</u>.<br>
                         <small class="fst-italic">${explain}</small>
                     </div>
-                    <button class="btn btn-primary w-100 mt-2" onclick="nextQuestion()">Tiếp tục <i class="bi bi-arrow-right"></i></button>
+                    <button class="btn btn-sm btn-primary w-100 mt-1" onclick="nextQuestion()">Tiếp tục <i class="bi bi-arrow-right"></i></button>
                 `;
             }
             explainBox.style.display = "block";
@@ -626,7 +798,7 @@
 
         async function finishQuizSession() {
             const body = document.getElementById("quizBody");
-            body.innerHTML = `<div class="text-center py-4"><div class="spinner-border text-success"></div><p class="mt-2 text-muted">Đang cập nhật kết quả...</p></div>`;
+            body.innerHTML = `<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-success"></div><p class="mt-2 text-muted small">Lưu kết quả...</p></div>`;
 
             try {
                 const res = await fetch('/api/quiz/finish', {
@@ -644,158 +816,36 @@
                 updatePlayerUI();
 
                 body.innerHTML = `
-                    <div class="text-center py-3">
-                        <i class="bi bi-trophy-fill display-3 text-warning mb-2 d-block"></i>
-                        <h4 class="fw-bold">Chúc mừng ${currentPlayer}!</h4>
-                        <p class="mb-2">Bạn vừa nhận được:</p>
-                        <div class="d-flex justify-content-center gap-3 mb-4">
-                            <span class="badge bg-primary fs-6 p-2">+${earnedScoreInGame} Điểm</span>
-                            <span class="badge bg-warning text-dark fs-6 p-2">+${earnedCoinsInGame} Tiền xu</span>
-                        </div>
-                        <div class="alert alert-light border small">
-                            Tổng điểm hiện có: <strong>${currentScore}</strong> | Số xu: <strong>${currentCoins}</strong>
+                    <div class="text-center py-2">
+                        <i class="bi bi-trophy-fill fs-1 text-warning mb-1 d-block"></i>
+                        <h5 class="fw-bold mb-1">Hoàn thành thử thách!</h5>
+                        <div class="d-flex justify-content-center gap-2 my-2">
+                            <span class="badge bg-primary p-2">+${earnedScoreInGame} Điểm</span>
+                            <span class="badge bg-warning text-dark p-2">+${earnedCoinsInGame} Xu</span>
                         </div>
                         <div class="d-flex justify-content-center gap-2 mt-3">
-                            <button class="btn btn-warning fw-bold" onclick="startQuiz()"><i class="bi bi-arrow-repeat"></i> Chơi lại</button>
-                            <button class="btn btn-success fw-bold" onclick="quizModal.hide(); openGiftShop();"><i class="bi bi-gift-fill"></i> Đổi quà</button>
+                            <button class="btn btn-sm btn-warning fw-bold" onclick="startQuiz()">Chơi lại</button>
+                            <button class="btn btn-sm btn-success fw-bold" onclick="quizModal.hide(); openGiftShop();">Đổi quà</button>
                         </div>
                     </div>
                 `;
             } catch (err) {
-                body.innerHTML = `<div class="alert alert-danger">Lỗi khi lưu kết quả.</div>`;
+                body.innerHTML = `<div class="alert alert-danger small">Lỗi lưu kết quả.</div>`;
             }
         }
 
-        // ==================== ĐỒ THỊ MẠNG (VIS-NETWORK) ====================
-        async function fetchGraphData() {
-            try {
-                const response = await fetch('/api/graph');
-                const data = await response.json();
-                globalNodes = data.nodes;
-                globalEdges = data.edges;
-                renderNetwork(globalNodes, globalEdges);
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        function renderNetwork(nodes, edges) {
-            const container = document.getElementById('network');
-            const formattedNodes = nodes.map(n => {
-                let color = "#38bdf8"; 
-                if (n.id === "hinh_hoc_phang") color = "#94a3b8";
-                if (n.id === "hinh_vuong") color = "#f472b6";
-                if (n.id === "hinh_chu_nhat" || n.id === "hinh_thoi") color = "#4ade80";
-
-                return {
-                    id: n.id,
-                    label: n.name || n.id,
-                    color: { background: color, border: "#1e293b", highlight: { background: '#f59e0b', border: '#b45309' } },
-                    font: { size: 13, color: "#0f172a", bold: true },
-                    shape: "box",
-                    margin: 8,
-                    shadow: true
-                };
-            });
-
-            const formattedEdges = edges.map(e => ({
-                from: e.from,
-                to: e.to,
-                label: e.label,
-                arrows: { to: { enabled: true, scaleFactor: 0.8 } },
-                font: { size: 10, background: '#ffffff', strokeWidth: 0 },
-                color: { color: '#64748b', highlight: '#f59e0b' },
-                smooth: { type: 'cubicBezier', forceDirection: 'vertical', roundness: 0.4 }
-            }));
-
-            network = new vis.Network(container, {
-                nodes: new vis.DataSet(formattedNodes),
-                edges: new vis.DataSet(formattedEdges)
-            }, {
-                layout: { hierarchical: { direction: "UD", sortMethod: "directed", levelSeparation: 110, nodeSpacing: 160 } },
-                physics: false,
-                interaction: { hover: true, zoomView: true, dragView: true }
-            });
-
-            network.once('afterDrawing', () => network.fit({ animation: { duration: 800 } }));
-
-            network.on("click", (params) => {
-                if (params.nodes.length > 0) {
-                    const selectedNode = globalNodes.find(n => n.id === params.nodes[0]);
-                    if (selectedNode) showDetails(selectedNode);
-                }
-            });
-        }
-
-        // ==================== HIỂN THỊ CHI TIẾT, MẸO & NÚT BÀI TOÁN ====================
-        function showDetails(node) {
-            const parentRels = globalEdges.filter(e => e.to === node.id);
-            const childRels = globalEdges.filter(e => e.from === node.id);
-
-            let parentHtml = parentRels.length > 0
-                ? parentRels.map(r => {
-                    const pNode = globalNodes.find(n => n.id === r.from);
-                    return `<div class="list-group-item list-group-item-action py-2"><span class="fw-bold text-primary">${pNode ? pNode.name : r.from}</span> <div class="small text-muted fst-italic">(${r.label})</div></div>`;
-                }).join('') : '<div class="text-muted small ps-2">Là hình gốc.</div>';
-
-            let childHtml = childRels.length > 0
-                ? childRels.map(r => {
-                    const cNode = globalNodes.find(n => n.id === r.to);
-                    return `<div class="list-group-item list-group-item-action py-2"><span class="fw-bold text-success">${cNode ? cNode.name : r.to}</span> <div class="small text-muted fst-italic">(${r.label})</div></div>`;
-                }).join('') : '<div class="text-muted small ps-2">Hình cuối chuỗi.</div>';
-
-            const tipContent = shapeTips[node.id] || "Quan sát kỹ các đường chéo và các góc đối để nhận dạng hình chuẩn xác nhất.";
-
-            document.getElementById("details-content").innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="badge bg-primary px-2 py-1 fs-6">${node.labels ? node.labels.join(', ') : 'Tứ Giác'}</span>
-                    <button class="btn btn-sm btn-outline-info" onclick="openExerciseModal('${node.id}')">
-                        <i class="bi bi-pencil-square me-1"></i> Bài toán của hình này
-                    </button>
-                </div>
-                <h4 class="fw-bold text-dark mb-3">${node.name}</h4>
-
-                <!-- Khung Mẹo ghi nhớ -->
-                <div class="tip-card p-3 mb-3 shadow-sm">
-                    <div class="d-flex align-items-center mb-1 text-warning-emphasis fw-bold small text-uppercase">
-                        <i class="bi bi-lightbulb-fill text-warning fs-6 me-2"></i> Mẹo ghi nhớ & giải nhanh
-                    </div>
-                    <div class="text-dark small" style="line-height: 1.6;">
-                        ${tipContent}
-                    </div>
-                </div>
-
-                <!-- Thẻ Thông số chi tiết -->
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-body p-3">
-                        <div class="mb-2"><span class="property-title d-block mb-1">1. Tên gọi</span><div>${node.name}</div></div>
-                        <hr class="my-2 text-light">
-                        <div class="mb-2"><span class="property-title d-block mb-1">2. Tính chất</span><div class="small">${node.tinh_chat || 'N/A'}</div></div>
-                        <hr class="my-2 text-light">
-                        <div class="mb-2"><span class="property-title d-block mb-1">3. Nhận biết</span><div class="small">${node.nhan_biet || 'N/A'}</div></div>
-                        <hr class="my-2 text-light">
-                        <div class="mb-2"><span class="property-title d-block mb-1">4. Chu vi (P)</span><span class="code-box">${node.chu_vi || 'N/A'}</span></div>
-                        <hr class="my-2 text-light">
-                        <div><span class="property-title d-block mb-1">5. Diện tích (S)</span><span class="code-box">${node.dien_tich || 'N/A'}</span></div>
-                    </div>
-                </div>
-
-                <!-- Thẻ Quan hệ -->
-                <div class="card shadow-sm border-0 border-start border-4 border-info">
-                    <div class="card-header bg-white fw-bold py-2"><i class="bi bi-diagram-2 me-1 text-info"></i> Quan Hệ</div>
-                    <div class="card-body p-2">
-                        <div class="mb-3"><span class="property-title d-block mb-1">Được suy ra từ:</span><div class="list-group border rounded-2">${parentHtml}</div></div>
-                        <div><span class="property-title d-block mb-1">Tiến hóa thành:</span><div class="list-group border rounded-2">${childHtml}</div></div>
-                    </div>
-                </div>
-            `;
-        }
-
+        // ==================== SỰ KIỆN TẢI TRANG ====================
         window.addEventListener('load', () => {
             syncPlayerData(currentPlayer);
             fetchGraphData();
         });
-        window.addEventListener('resize', () => { if (network) network.fit(); });
+
+        // Xử lý tự co giãn khi xoay màn hình điện thoại
+        window.addEventListener('resize', () => {
+            if (network) {
+                network.fit({ animation: { duration: 300 } });
+            }
+        });
     </script>
 </body>
 </html>
